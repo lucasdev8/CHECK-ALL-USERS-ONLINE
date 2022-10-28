@@ -1,35 +1,37 @@
+const fs = require('fs')
 const { spawn } = require('child_process')
-const fs = require('fs');
 
 const controllerOnlineUser = async (req, res) => {
+    const users = []
     
-    const data = fs.readFileSync('.../usuarios.db', {encoding:'utf8', flag:'r'})
+    const data = await fs.readFileSync('./usuarios.db', {encoding:'utf8', flag:'r'})
 
     const dataUsers = data.split('\n')
 
-    dataUsers.forEach((user) => {
+    dataUsers.map(async UserAndLimit => {
 
-        const userAndlimit = user.split(', ')
+        const userAndlimit = UserAndLimit.split(' ')
 
         const command = `ps -u ${userAndlimit[0]} | grep sshd | wc -l`
-        const ls = spawn(command, [command], {shell: true})
 
-        ls.stdout.on("data", (data) => {
-            const users = []
-            if (data == 0) {
-                users.push({
-                    user: userAndlimit[0],
-                    onlines: `${data}`.split('\n')[0],
-                    limit: userAndlimit[1]
-                })
-                console.log(users)
-                res.send(users)
-            }
+        const ls = await spawn(command, [command], { shell: true })
+        
+        ls.stdout.on('data', (connectedOverSsh) => {
+
+            users.push({
+                user: userAndlimit[0],
+                onlines: parseInt(`${connectedOverSsh}`.split('\n')[0]),
+                limiteUsers: parseInt(userAndlimit[1])
+            })
+
+            return res.send(users)
+            
         })
-        ls.stdout.on('error', (err) => {
-            console.log(err)
+        ls.stderr.on('error', (erro) => {
+            console.log(erro)
         })
     })
-
 }
 module.exports = controllerOnlineUser
+
+//:usuarios.db/CHECK/src/controllers/usu
