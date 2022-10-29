@@ -1,11 +1,10 @@
 const fs = require('fs')
-const { spawn } = require('child_process')
+const { exec } = require('child_process')
 
 const controllerOnlineUser = async (req, res) => {
     const users = []
-    
-    const data = await fs.readFileSync('./usuarios.db', {encoding:'utf8', flag:'r'})
 
+    const data = await fs.readFileSync('./usuarios.db', {encoding:'utf8', flag:'r'})
     const dataUsers = data.split('\n')
 
     dataUsers.map(async UserAndLimit => {
@@ -14,24 +13,25 @@ const controllerOnlineUser = async (req, res) => {
 
         const command = `ps -u ${userAndlimit[0]} | grep sshd | wc -l`
 
-        const ls = await spawn(command, [command], { shell: true })
-        
-        ls.stdout.on('data', (connectedOverSsh) => {
+        exec(command, (error, stdout, stderr) => {
+            
+            if (error) throw error;
 
             users.push({
                 user: userAndlimit[0],
-                onlines: parseInt(`${connectedOverSsh}`.split('\n')[0]),
+                onlines: parseInt(stdout.split('\n')[0]),
                 limiteUsers: parseInt(userAndlimit[1])
             })
 
-            return res.send(users)
-            
-        })
-        ls.stderr.on('error', (erro) => {
-            console.log(erro)
-        })
+            if (users.length == dataUsers.length) {
+
+                return res.send(users)
+                
+            }
+        }) 
+        
     })
 }
 module.exports = controllerOnlineUser
 
-//:usuarios.db/CHECK/src/controllers/usu
+//const { exec } = require('child_process');exec("ps -u root | grep sshd | wc -l", (err, stdout, stderr)=>console.log(stdout))
